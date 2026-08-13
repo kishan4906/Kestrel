@@ -1,6 +1,7 @@
 #include "Board.h"
 #include "MoveGenerator.h"
 #include "Evaluator.h"
+#include "Search.h"
 #include <iostream>
 
 static void printMoves(const std::vector<Move>& moves) {
@@ -119,6 +120,28 @@ int main() {
     board.loadFEN("3rk3/8/8/8/8/8/8/4K3 w - - 0 1");
     board.print();
     std::cout << "Evaluation: " << Evaluator::evaluate(board) << " (expect -500)\n";
+
+    // Search test: white queen can capture a free/undefended black rook.
+    // At depth 2, the engine should find and take it.
+    std::cout << "\n--- Search test: white queen can capture a free rook ---\n";
+    board.loadFEN("4k3/8/8/3r4/8/8/8/3QK3 w - - 0 1");
+    board.print();
+    {
+        SearchResult r = Search::findBestMove(board, 2);
+        std::cout << "Best move: " << moveToString(r.bestMove)
+                   << " (expect d1d5, capturing the rook), score: " << r.score << "\n";
+    }
+
+    // Search test: mate in 1 — white queen delivers back-rank mate on e8.
+    // Black king on h8 is boxed in by its own pawns on g7/h7.
+    std::cout << "\n--- Search test: mate in 1 ---\n";
+    board.loadFEN("6k1/6pp/8/8/8/8/8/4Q1K1 w - - 0 1");
+    board.print();
+    {
+        SearchResult r = Search::findBestMove(board, 2);
+        std::cout << "Best move: " << moveToString(r.bestMove)
+                   << " (expect e1e8, checkmate), score: " << r.score << "\n";
+    }
 
     return 0;
 }
