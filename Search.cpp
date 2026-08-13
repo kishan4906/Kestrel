@@ -4,6 +4,16 @@
 #include <vector>
 #include <algorithm>
 
+// Defaults to the farthest representable future time so that an *untimed*
+// search (plain findBestMove) never accidentally trips the timeout check —
+// only findBestMoveTimed moves this to a real near-term deadline.
+std::chrono::steady_clock::time_point Search::deadline = std::chrono::steady_clock::time_point::max();
+long Search::nodeCount = 0;
+
+bool Search::timeIsUp() {
+    return std::chrono::steady_clock::now() >= deadline;
+}
+
 // Same piece values as the evaluator, duplicated here for MVV-LVA scoring —
 // kept local since move ordering only needs relative magnitude, not the
 // exact same constants as evaluation.
@@ -45,6 +55,14 @@ void Search::orderMoves(const Board& board, std::vector<Move>& moves) {
 }
 
 int Search::alphaBeta(const Board& board, int depth, int alpha, int beta, bool maximizing) {
+    nodeCount++;
+
+    // Only check the clock every so often — calling steady_clock::now() on
+    // every single node adds measurable overhead across millions of calls.
+    if ((nodeCount & 2047) == 0 && timeIsUp()) {
+        throw SearchTimeout{};
+    }
+
     std::vector<Move> legalMoves = MoveGenerator::generateLegalMoves(board);
 
     // No legal moves: either checkmate or stalemate — both are terminal,
@@ -106,6 +124,7 @@ SearchResult Search::findBestMove(const Board& board, int depth) {
     Move bestMove = legalMoves[0]; // fallback in case everything ties
 
     for (const Move& m : legalMoves) {
+        nodeCount++;
         Board copy = board;
         copy.makeMove(m);
         int score = alphaBeta(copy, depth - 1, -INF, INF, !maximizing);
@@ -121,5 +140,28 @@ SearchResult Search::findBestMove(const Board& board, int depth) {
 
     result.bestMove = bestMove;
     result.score = bestScore;
+    result.depthReached = depth;
+    result.nodes = nodeCount;
     return result;
+}
+
+SearchResult Search::findBestMoveTimed(const Board& board, int maxDepth, int timeLimitMs) {
+    deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(timeLimitMs);
+    nodeCount = 0;
+
+    SearchResult best; // best result from the last FULLY completed depth
+    best.bestMove = MoveGenerator::generateLegalMoves(board)[0]; // safe fallback if depth 1 itself times out
+
+    for (int depth = 1; depth <= maxDepth; depth++) {
+        try {
+            SearchResult r = findBestMove(board, depth);
+            best = r; // this depth finished cleanly — trust it fully
+        } catch (const SearchTimeout&) {
+            break; // ran out of time mid-depth — keep the previous depth's result
+        }
+
+        if (timeIsUp()) break;
+    }
+
+    return best;
 }

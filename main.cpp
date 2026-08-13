@@ -170,5 +170,20 @@ int main() {
         std::cout << "Time taken: " << seconds << "s\n";
     }
 
+    // Iterative deepening test: give it a 1-second budget instead of a
+    // fixed depth. It should search depth 1, 2, 3... as far as it can get
+    // within that time, then return the best move from the last completed depth.
+    std::cout << "\n--- Iterative deepening test: starting position, 1000ms budget ---\n";
+    {
+        auto start = std::chrono::steady_clock::now();
+        SearchResult r = Search::findBestMoveTimed(board, 20, 1000);
+        auto end = std::chrono::steady_clock::now();
+        double seconds = std::chrono::duration<double>(end - start).count();
+
+        std::cout << "Best move: " << moveToString(r.bestMove) << ", score: " << r.score << "\n";
+        std::cout << "Depth reached: " << r.depthReached << ", nodes searched: " << r.nodes << "\n";
+        std::cout << "Time taken: " << seconds << "s (budget was 1.0s)\n";
+    }
+
     return 0;
 }
