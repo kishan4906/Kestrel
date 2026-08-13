@@ -1,5 +1,6 @@
 #include "Board.h"
 #include "MoveGenerator.h"
+#include "Evaluator.h"
 #include <iostream>
 
 static void printMoves(const std::vector<Move>& moves) {
@@ -100,6 +101,24 @@ int main() {
     printMoves(MoveGenerator::generatePseudoLegalMoves(board));
     std::cout << "Legal:        ";
     printMoves(MoveGenerator::generateLegalMoves(board));
+
+    // Evaluation: starting position should be exactly 0 (perfectly symmetric material)
+    std::cout << "\n--- Eval test: starting position ---\n";
+    board.loadFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+    board.print();
+    std::cout << "Evaluation: " << Evaluator::evaluate(board) << " (expect 0)\n";
+
+    // Evaluation: white is up a queen — should be strongly positive (+900)
+    std::cout << "\n--- Eval test: white up a queen ---\n";
+    board.loadFEN("4k3/8/8/8/8/8/8/3QK3 w - - 0 1");
+    board.print();
+    std::cout << "Evaluation: " << Evaluator::evaluate(board) << " (expect +900)\n";
+
+    // Evaluation: black is up a rook — should be negative (-500)
+    std::cout << "\n--- Eval test: black up a rook ---\n";
+    board.loadFEN("3rk3/8/8/8/8/8/8/4K3 w - - 0 1");
+    board.print();
+    std::cout << "Evaluation: " << Evaluator::evaluate(board) << " (expect -500)\n";
 
     return 0;
 }
