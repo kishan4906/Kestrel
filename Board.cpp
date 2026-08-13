@@ -1,4 +1,5 @@
 #include "Board.h"
+#include "Move.h"
 #include <sstream>
 #include <cctype>
 #include <iostream>
@@ -123,4 +124,56 @@ void Board::print() const {
     }
     std::cout << "  a b c d e f g h\n";
     std::cout << "Side to move: " << (sideToMove == WHITE ? "White" : "Black") << "\n";
+}
+
+void Board::makeMove(const Move& m) {
+    Piece moving = at(m.from);
+    set(m.from, Piece{});
+
+    // En passant: the captured pawn sits beside the destination, not on it —
+    // same file as the destination, same rank as the moving pawn started on.
+    if (m.flag == EN_PASSANT) {
+        Square capturedSq = makeSquare(fileOf(m.to), rankOf(m.from));
+        set(capturedSq, Piece{});
+    }
+
+    // Promotion: the pawn becomes the chosen piece type on arrival.
+    if (m.flag == PROMOTION || m.flag == PROMOTION_CAPTURE) {
+        moving.type = m.promotion;
+    }
+
+    set(m.to, moving);
+
+    // Castling: also move the corresponding rook alongside the king.
+    if (m.flag == CASTLE_KINGSIDE) {
+        int rank = rankOf(m.from);
+        Piece rook = at(makeSquare(7, rank));
+        set(makeSquare(7, rank), Piece{});
+        set(makeSquare(5, rank), rook);
+    } else if (m.flag == CASTLE_QUEENSIDE) {
+        int rank = rankOf(m.from);
+        Piece rook = at(makeSquare(0, rank));
+        set(makeSquare(0, rank), Piece{});
+        set(makeSquare(3, rank), rook);
+    }
+
+    // En passant target only exists for one move: the turn right after a double push.
+    if (m.flag == DOUBLE_PAWN_PUSH) {
+        enPassantTarget = makeSquare(fileOf(m.from), (rankOf(m.from) + rankOf(m.to)) / 2);
+    } else {
+        enPassantTarget = -1;
+    }
+
+    // Castling rights: lose them if the king or a rook moves, or a rook is captured.
+    // (Minimal version — refined further once castling moves are generated.)
+    if (moving.type == KING) {
+        if (moving.color == WHITE) { castling.whiteKingSide = false; castling.whiteQueenSide = false; }
+        else                       { castling.blackKingSide = false; castling.blackQueenSide = false; }
+    }
+    if (m.from == makeSquare(0, 0) || m.to == makeSquare(0, 0)) castling.whiteQueenSide = false;
+    if (m.from == makeSquare(7, 0) || m.to == makeSquare(7, 0)) castling.whiteKingSide = false;
+    if (m.from == makeSquare(0, 7) || m.to == makeSquare(0, 7)) castling.blackQueenSide = false;
+    if (m.from == makeSquare(7, 7) || m.to == makeSquare(7, 7)) castling.blackKingSide = false;
+
+    sideToMove = (sideToMove == WHITE) ? BLACK : WHITE;
 }

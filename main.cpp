@@ -79,5 +79,27 @@ int main() {
     board.print();
     printMoves(MoveGenerator::generatePseudoLegalMoves(board));
 
+    // Pinned piece: white knight on d2 is pinned to the king by a black rook
+    // on d-file. Pseudo-legal moves would let it jump away; legal moves must not.
+    std::cout << "\n--- Pin test: white knight on d2 pinned by rook on d8 ---\n";
+    board.loadFEN("3r3k/8/8/8/8/8/3N4/3K4 w - - 0 1");
+    board.print();
+    std::cout << "Pseudo-legal: ";
+    printMoves(MoveGenerator::generatePseudoLegalMoves(board));
+    std::cout << "Legal:        ";
+    printMoves(MoveGenerator::generateLegalMoves(board));
+    std::cout << "In check? " << (MoveGenerator::isInCheck(board, WHITE) ? "yes" : "no") << "\n";
+
+    // King in check: white king on e1 in check from black rook on e8.
+    // Only moves that escape check should remain legal.
+    std::cout << "\n--- Check test: white king on e1 in check from rook on e8 ---\n";
+    board.loadFEN("4r2k/8/8/8/8/8/8/4K3 w - - 0 1");
+    board.print();
+    std::cout << "In check? " << (MoveGenerator::isInCheck(board, WHITE) ? "yes" : "no") << "\n";
+    std::cout << "Pseudo-legal: ";
+    printMoves(MoveGenerator::generatePseudoLegalMoves(board));
+    std::cout << "Legal:        ";
+    printMoves(MoveGenerator::generateLegalMoves(board));
+
     return 0;
 }

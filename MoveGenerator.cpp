@@ -155,6 +155,99 @@ void MoveGenerator::generatePawnMoves(const Board& board, Square from, std::vect
     }
 }
 
+Square MoveGenerator::findKing(const Board& board, Color color) {
+    for (Square sq = 0; sq < 64; sq++) {
+        Piece p = board.at(sq);
+        if (p.type == KING && p.color == color) return sq;
+    }
+    return -1; // shouldn't happen in a valid position
+}
+
+bool MoveGenerator::isSquareAttacked(const Board& board, Square sq, Color byColor) {
+    int file = fileOf(sq);
+    int rank = rankOf(sq);
+
+    // Knight attacks: symmetric, so reuse the same delta table — if a
+    // byColor knight sits on any of these offsets, it attacks sq.
+    for (auto& d : KNIGHT_DELTAS) {
+        int f = file + d[0], r = rank + d[1];
+        if (!onBoard(f, r)) continue;
+        Piece p = board.at(makeSquare(f, r));
+        if (p.type == KNIGHT && p.color == byColor) return true;
+    }
+
+    // King attacks: adjacent squares, also symmetric.
+    for (auto& d : KING_DELTAS) {
+        int f = file + d[0], r = rank + d[1];
+        if (!onBoard(f, r)) continue;
+        Piece p = board.at(makeSquare(f, r));
+        if (p.type == KING && p.color == byColor) return true;
+    }
+
+    // Pawn attacks: NOT symmetric — a white pawn attacks diagonally forward
+    // (+1 rank), so to see if sq is attacked by a white pawn, look one rank
+    // BEHIND sq (the pawn's rank), not ahead.
+    int pawnAttackRank = (byColor == WHITE) ? rank - 1 : rank + 1;
+    for (int df : { -1, 1 }) {
+        int f = file + df;
+        if (!onBoard(f, pawnAttackRank)) continue;
+        Piece p = board.at(makeSquare(f, pawnAttackRank));
+        if (p.type == PAWN && p.color == byColor) return true;
+    }
+
+    // Sliding attacks (bishop/rook/queen): cast a ray in each direction;
+    // the first piece hit determines whether that direction attacks sq.
+    for (auto& d : BISHOP_DIRS) {
+        int f = file, r = rank;
+        while (true) {
+            f += d[0]; r += d[1];
+            if (!onBoard(f, r)) break;
+            Piece p = board.at(makeSquare(f, r));
+            if (!p.isEmpty()) {
+                if (p.color == byColor && (p.type == BISHOP || p.type == QUEEN)) return true;
+                break; // blocked, stop this ray regardless of who's there
+            }
+        }
+    }
+    for (auto& d : ROOK_DIRS) {
+        int f = file, r = rank;
+        while (true) {
+            f += d[0]; r += d[1];
+            if (!onBoard(f, r)) break;
+            Piece p = board.at(makeSquare(f, r));
+            if (!p.isEmpty()) {
+                if (p.color == byColor && (p.type == ROOK || p.type == QUEEN)) return true;
+                break;
+            }
+        }
+    }
+
+    return false;
+}
+
+bool MoveGenerator::isInCheck(const Board& board, Color color) {
+    Square kingSq = findKing(board, color);
+    if (kingSq == -1) return false; // no king on board — shouldn't happen
+    Color opponent = (color == WHITE) ? BLACK : WHITE;
+    return isSquareAttacked(board, kingSq, opponent);
+}
+
+std::vector<Move> MoveGenerator::generateLegalMoves(const Board& board) {
+    std::vector<Move> pseudoLegal = generatePseudoLegalMoves(board);
+    std::vector<Move> legal;
+    Color mover = board.sideToMove;
+
+    for (const Move& m : pseudoLegal) {
+        Board copy = board;      // Board is trivially copyable (std::array of Piece)
+        copy.makeMove(m);
+        if (!isInCheck(copy, mover)) {
+            legal.push_back(m);
+        }
+    }
+
+    return legal;
+}
+
 std::vector<Move> MoveGenerator::generatePseudoLegalMoves(const Board& board) {
     std::vector<Move> moves;
     Color us = board.sideToMove;

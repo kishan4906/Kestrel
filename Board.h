@@ -3,6 +3,8 @@
 #include <string>
 #include <cstdint>
 
+struct Move; // full definition in Move.h — avoids circular include since Move.h includes Board.h
+
 // ---- Piece encoding ----
 // Piece = color | type, packed into a single byte enum.
 enum PieceType : uint8_t {
@@ -45,6 +47,12 @@ public:
 
     Piece at(Square sq) const { return squares[sq]; }
     void  set(Square sq, Piece p) { squares[sq] = p; }
+
+    // Applies a move to this board in place: moves the piece, handles
+    // captures, en passant removal, promotion, and flips side to move.
+    // Does NOT check legality — caller is responsible for only passing
+    // pseudo-legal moves (legality filtering happens one layer up).
+    void makeMove(const Move& m);
 
     Color sideToMove = WHITE;
     CastlingRights castling;
