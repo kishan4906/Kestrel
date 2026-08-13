@@ -2,6 +2,7 @@
 #include "Board.h"
 #include "Move.h"
 #include <limits>
+#include <vector>
 
 // A move paired with the score the search assigned to it.
 struct SearchResult {
@@ -23,4 +24,10 @@ private:
     // plies deep. alpha/beta bound the range of scores worth exploring —
     // any branch that falls outside gets pruned without full evaluation.
     static int alphaBeta(const Board& board, int depth, int alpha, int beta, bool maximizing);
+
+    // Reorders moves in place so captures (especially good ones — capturing
+    // a queen with a pawn) are searched before quiet moves. Alpha-beta
+    // prunes far more when strong moves are found early, since a beta
+    // cutoff is more likely to trigger sooner.
+    static void orderMoves(const Board& board, std::vector<Move>& moves);
 };

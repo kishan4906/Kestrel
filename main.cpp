@@ -3,6 +3,7 @@
 #include "Evaluator.h"
 #include "Search.h"
 #include <iostream>
+#include <chrono>
 
 static void printMoves(const std::vector<Move>& moves) {
     std::cout << "Found " << moves.size() << " moves: ";
@@ -141,6 +142,32 @@ int main() {
         SearchResult r = Search::findBestMove(board, 2);
         std::cout << "Best move: " << moveToString(r.bestMove)
                    << " (expect e1e8, checkmate), score: " << r.score << "\n";
+    }
+
+    // Move-ordering / depth test: search the starting position at depth 4
+    // with move ordering on. This is mainly a speed/sanity check — at
+    // depth 4 a naive unordered search takes noticeably longer.
+    std::cout << "\n--- Search test: starting position, depth 4 (timed) ---\n";
+    board.loadFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+    {
+        auto start = std::chrono::steady_clock::now();
+        SearchResult r = Search::findBestMove(board, 4);
+        auto end = std::chrono::steady_clock::now();
+        double seconds = std::chrono::duration<double>(end - start).count();
+
+        std::cout << "Best move: " << moveToString(r.bestMove) << ", score: " << r.score << "\n";
+        std::cout << "Time taken: " << seconds << "s\n";
+    }
+
+    std::cout << "\n--- Search test: starting position, depth 5 (timed) ---\n";
+    {
+        auto start = std::chrono::steady_clock::now();
+        SearchResult r = Search::findBestMove(board, 5);
+        auto end = std::chrono::steady_clock::now();
+        double seconds = std::chrono::duration<double>(end - start).count();
+
+        std::cout << "Best move: " << moveToString(r.bestMove) << ", score: " << r.score << "\n";
+        std::cout << "Time taken: " << seconds << "s\n";
     }
 
     return 0;
