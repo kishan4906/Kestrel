@@ -16,4 +16,5 @@ private:
     static void generateSlidingMoves(const Board& board, Square from,
                                       const int deltas[4][2], int numDirections,
                                       std::vector<Move>& moves);
+    static void generatePawnMoves(const Board& board, Square from, std::vector<Move>& moves);
 };

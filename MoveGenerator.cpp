@@ -93,6 +93,68 @@ void MoveGenerator::generateSlidingMoves(const Board& board, Square from,
     }
 }
 
+// Adds a pawn push/capture, expanding into 4 promotion moves if it lands
+// on the far rank (rank 8 for white, rank 1 for black).
+static void addPawnMove(Square from, Square to, bool isCapture, bool isPromotion,
+                         std::vector<Move>& moves) {
+    if (isPromotion) {
+        MoveFlag flag = isCapture ? PROMOTION_CAPTURE : PROMOTION;
+        for (PieceType promo : { QUEEN, ROOK, BISHOP, KNIGHT }) {
+            moves.push_back({from, to, flag, promo});
+        }
+    } else {
+        moves.push_back({from, to, isCapture ? CAPTURE : QUIET});
+    }
+}
+
+void MoveGenerator::generatePawnMoves(const Board& board, Square from, std::vector<Move>& moves) {
+    Color us = board.at(from).color;
+    int file = fileOf(from);
+    int rank = rankOf(from);
+
+    // White moves up the board (+1 rank), black moves down (-1 rank).
+    int dir = (us == WHITE) ? 1 : -1;
+    int startRank = (us == WHITE) ? 1 : 6;   // rank 2 for white, rank 7 for black (0-indexed)
+    int promoRank = (us == WHITE) ? 7 : 0;   // landing on rank 8 / rank 1 promotes
+
+    // --- Single push ---
+    int oneRank = rank + dir;
+    if (onBoard(file, oneRank)) {
+        Square oneSq = makeSquare(file, oneRank);
+        if (board.at(oneSq).isEmpty()) {
+            bool promotes = (oneRank == promoRank);
+            addPawnMove(from, oneSq, false, promotes, moves);
+
+            // --- Double push (only from the start rank, only if both squares are clear) ---
+            if (rank == startRank) {
+                int twoRank = rank + 2 * dir;
+                Square twoSq = makeSquare(file, twoRank);
+                if (board.at(twoSq).isEmpty()) {
+                    moves.push_back({from, twoSq, DOUBLE_PAWN_PUSH});
+                }
+            }
+        }
+    }
+
+    // --- Diagonal captures (including en passant) ---
+    for (int df : { -1, 1 }) {
+        int captFile = file + df;
+        int captRank = rank + dir;
+        if (!onBoard(captFile, captRank)) continue;
+
+        Square captSq = makeSquare(captFile, captRank);
+        Piece target = board.at(captSq);
+
+        if (!target.isEmpty() && target.color != us) {
+            bool promotes = (captRank == promoRank);
+            addPawnMove(from, captSq, true, promotes, moves);
+        } else if (target.isEmpty() && captSq == board.enPassantTarget) {
+            // En passant: the captured pawn sits beside us, not on captSq itself.
+            moves.push_back({from, captSq, EN_PASSANT});
+        }
+    }
+}
+
 std::vector<Move> MoveGenerator::generatePseudoLegalMoves(const Board& board) {
     std::vector<Move> moves;
     Color us = board.sideToMove;
@@ -102,6 +164,9 @@ std::vector<Move> MoveGenerator::generatePseudoLegalMoves(const Board& board) {
         if (p.isEmpty() || p.color != us) continue;
 
         switch (p.type) {
+            case PAWN:
+                generatePawnMoves(board, sq, moves);
+                break;
             case KNIGHT:
                 generateKnightMoves(board, sq, moves);
                 break;
@@ -118,7 +183,6 @@ std::vector<Move> MoveGenerator::generatePseudoLegalMoves(const Board& board) {
                 generateSlidingMoves(board, sq, BISHOP_DIRS, 4, moves);
                 generateSlidingMoves(board, sq, ROOK_DIRS, 4, moves);
                 break;
-            // PAWN comes next
             default:
                 break;
         }

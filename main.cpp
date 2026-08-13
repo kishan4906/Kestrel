@@ -55,5 +55,29 @@ int main() {
     board.print();
     printMoves(MoveGenerator::generatePseudoLegalMoves(board));
 
+    // Pawn on start rank: single push, double push, and a diagonal capture
+    std::cout << "\n--- Pawn test: white pawn on e2, black pawn to capture on d3 ---\n";
+    board.loadFEN("4k3/8/8/8/8/3p4/4P3/4K3 w - - 0 1");
+    board.print();
+    printMoves(MoveGenerator::generatePseudoLegalMoves(board));
+
+    // Pawn NOT on start rank: only single push allowed, no double push
+    std::cout << "\n--- Pawn test: white pawn on e3 (already moved) ---\n";
+    board.loadFEN("4k3/8/8/8/8/4P3/8/4K3 w - - 0 1");
+    board.print();
+    printMoves(MoveGenerator::generatePseudoLegalMoves(board));
+
+    // En passant: white pawn on e5, black just double-pushed d7-d5, ep target d6
+    std::cout << "\n--- En passant test: white pawn e5, black pawn just played d7-d5 ---\n";
+    board.loadFEN("4k3/8/8/3pP3/8/8/8/4K3 w - d6 0 1");
+    board.print();
+    printMoves(MoveGenerator::generatePseudoLegalMoves(board));
+
+    // Promotion: white pawn on e7, empty square ahead — should yield 4 promotion moves
+    std::cout << "\n--- Promotion test: white pawn on e7, empty e8 ---\n";
+    board.loadFEN("7k/4P3/8/8/8/8/8/4K3 w - - 0 1");
+    board.print();
+    printMoves(MoveGenerator::generatePseudoLegalMoves(board));
+
     return 0;
 }
