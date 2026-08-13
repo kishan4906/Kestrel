@@ -13,6 +13,11 @@ static const int KING_DELTAS[8][2] = {
     {-1, 0}, {-1, -1}, {0, -1}, {1, -1}
 };
 
+// Directions for sliding pieces. Bishop moves diagonally, rook orthogonally;
+// queen is just both combined at the call site.
+static const int BISHOP_DIRS[4][2] = { {1, 1}, {1, -1}, {-1, 1}, {-1, -1} };
+static const int ROOK_DIRS[4][2]   = { {1, 0}, {-1, 0}, {0, 1}, {0, -1} };
+
 static bool onBoard(int file, int rank) {
     return file >= 0 && file < 8 && rank >= 0 && rank < 8;
 }
@@ -54,6 +59,40 @@ void MoveGenerator::generateKingMoves(const Board& board, Square from, std::vect
     // castling through/into check requires the check-detection logic first.
 }
 
+// Walks each direction one square at a time, stopping at the first piece hit
+// (capturing it if it's an enemy) or at the board edge. This is the same
+// idea for bishop, rook, and queen — only the direction set differs.
+void MoveGenerator::generateSlidingMoves(const Board& board, Square from,
+                                          const int deltas[4][2], int numDirections,
+                                          std::vector<Move>& moves) {
+    Color us = board.at(from).color;
+    int fromFile = fileOf(from);
+    int fromRank = rankOf(from);
+
+    for (int d = 0; d < numDirections; d++) {
+        int file = fromFile;
+        int rank = fromRank;
+
+        while (true) {
+            file += deltas[d][0];
+            rank += deltas[d][1];
+            if (!onBoard(file, rank)) break;
+
+            Square to = makeSquare(file, rank);
+            Piece target = board.at(to);
+
+            if (target.isEmpty()) {
+                moves.push_back({from, to, QUIET});
+                continue; // keep walking in this direction
+            }
+            if (target.color != us) {
+                moves.push_back({from, to, CAPTURE});
+            }
+            break; // blocked either way — own piece or a captured enemy piece
+        }
+    }
+}
+
 std::vector<Move> MoveGenerator::generatePseudoLegalMoves(const Board& board) {
     std::vector<Move> moves;
     Color us = board.sideToMove;
@@ -69,7 +108,17 @@ std::vector<Move> MoveGenerator::generatePseudoLegalMoves(const Board& board) {
             case KING:
                 generateKingMoves(board, sq, moves);
                 break;
-            // PAWN, BISHOP, ROOK, QUEEN come in the next steps
+            case BISHOP:
+                generateSlidingMoves(board, sq, BISHOP_DIRS, 4, moves);
+                break;
+            case ROOK:
+                generateSlidingMoves(board, sq, ROOK_DIRS, 4, moves);
+                break;
+            case QUEEN:
+                generateSlidingMoves(board, sq, BISHOP_DIRS, 4, moves);
+                generateSlidingMoves(board, sq, ROOK_DIRS, 4, moves);
+                break;
+            // PAWN comes next
             default:
                 break;
         }

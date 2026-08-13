@@ -37,5 +37,23 @@ int main() {
     board.print();
     printMoves(MoveGenerator::generatePseudoLegalMoves(board));
 
+    // Rook in the center of an empty board — should see 14 squares (7 each direction)
+    std::cout << "\n--- Rook test: white rook on d4, empty board ---\n";
+    board.loadFEN("4k3/8/8/8/3R4/8/8/4K3 w - - 0 1");
+    board.print();
+    printMoves(MoveGenerator::generatePseudoLegalMoves(board));
+
+    // Bishop blocked by own pawn one square away, enemy pawn blocking another diagonal
+    std::cout << "\n--- Bishop test: blocked by own pawn, captures enemy pawn ---\n";
+    board.loadFEN("4k3/8/8/8/8/2P5/1B6/4K1p1 w - - 0 1");
+    board.print();
+    printMoves(MoveGenerator::generatePseudoLegalMoves(board));
+
+    // Queen in the center of an empty board — should see 27 squares (8 directions)
+    std::cout << "\n--- Queen test: white queen on d4, empty board ---\n";
+    board.loadFEN("4k3/8/8/8/3Q4/8/8/4K3 w - - 0 1");
+    board.print();
+    printMoves(MoveGenerator::generatePseudoLegalMoves(board));
+
     return 0;
 }
