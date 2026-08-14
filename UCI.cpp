@@ -123,6 +123,14 @@ void UCI::handleGo(const std::string& line) {
         result = Search::findBestMoveTimed(board, 20, 2000);
     }
 
+    // UCI convention: "score cp" is reported from the perspective of the
+    // side to move, not always White. Our SearchResult::score is always
+    // White-perspective, so flip the sign when it's Black's turn.
+    int scoreForUCI = (board.sideToMove == WHITE) ? result.score : -result.score;
+
+    std::cout << "info depth " << result.depthReached
+               << " score cp " << scoreForUCI
+               << " nodes " << result.nodes << "\n" << std::flush;
     std::cout << "bestmove " << moveToString(result.bestMove) << "\n" << std::flush;
 }
 
