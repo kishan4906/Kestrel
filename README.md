@@ -6,6 +6,8 @@ It is designed around classic chess-engine techniques such as **alpha-beta searc
 
 Kestrel can be used as a standalone chess engine or integrated into other applications.
 
+**Kestrel powers [Corvus](https://github.com/kishan4906/Corvus), an AI chess coaching application that explains Kestrel's analysis in plain English.**
+
 ## ✨ Features
 
 * ♟️ Complete chess position representation
