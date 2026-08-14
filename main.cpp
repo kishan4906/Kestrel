@@ -122,6 +122,28 @@ int main() {
     board.print();
     std::cout << "Evaluation: " << Evaluator::evaluate(board) << " (expect -500)\n";
 
+    // Positional test: same material (one white knight), corner vs center.
+    // The centered knight should score meaningfully higher due to the PST.
+    std::cout << "\n--- Positional test: knight on rim (a1) vs knight in center (d4) ---\n";
+    board.loadFEN("4k3/8/8/8/8/8/8/N3K3 w - - 0 1");
+    board.print();
+    std::cout << "Knight on a1 evaluation: " << Evaluator::evaluate(board) << "\n";
+    board.loadFEN("4k3/8/8/8/3N4/8/8/4K3 w - - 0 1");
+    board.print();
+    std::cout << "Knight on d4 evaluation: " << Evaluator::evaluate(board)
+               << " (expect noticeably higher than the a1 case)\n";
+
+    // Positional test: pawn about to promote should score higher than one
+    // still on its start square, even though material is identical.
+    std::cout << "\n--- Positional test: pawn on start rank (e2) vs near promotion (e7) ---\n";
+    board.loadFEN("4k3/8/8/8/8/8/4P3/4K3 w - - 0 1");
+    board.print();
+    std::cout << "Pawn on e2 evaluation: " << Evaluator::evaluate(board) << "\n";
+    board.loadFEN("4k3/4P3/8/8/8/8/8/4K3 w - - 0 1");
+    board.print();
+    std::cout << "Pawn on e7 evaluation: " << Evaluator::evaluate(board)
+               << " (expect noticeably higher than the e2 case)\n";
+
     // Search test: white queen can capture a free/undefended black rook.
     // At depth 2, the engine should find and take it.
     std::cout << "\n--- Search test: white queen can capture a free rook ---\n";

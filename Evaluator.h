@@ -9,4 +9,5 @@ public:
 
 private:
     static int materialScore(const Board& board);
+    static int positionalScore(const Board& board);
 };
